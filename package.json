@@ -1,0 +1,13 @@
+{
+  "name": "fly-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fly 1.0: Le Chonk (Mistral Large 4) lightened with the FlyCoder method, for Ollama",
+  "scripts": {
+    "test": "node --test tests/modelfile.test.mjs tests/router.test.mjs",
+    "brain": "node brain/flybrain.mjs --prefix Tromset/"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
