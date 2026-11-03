@@ -21,6 +21,19 @@ ollama run Tromset/fly1.0:lite       # local, Macs with 8 GB or more
 
 Le Chonk does not fit on any Mac, even compressed. Its smallest published quantization (IQ1_S, about 1.9 bits per weight) weighs 233 GB, and Q4_K_M weighs 605 GB. FlyCoder's method keeps the heavy model where it fits. `ultra` uses Ollama's cloud copy (`mistral-large-4:cloud`) with the FlyCoder settings, and the local work goes to `lite`, a quantized 6 GB model.
 
+### `fly1.0:lite` cannot be found
+
+`Tromset/fly1.0:lite` is published on [ollama.com/Tromset/fly1.0](https://ollama.com/Tromset/fly1.0/tags) and built from `Modelfile.lite`. When Ollama says it does not exist, the cause is almost always the command:
+
+| Ollama says | Cause | Fix |
+|---|---|---|
+| `pull model manifest: file does not exist` after `ollama run fly1.0:lite` | the `Tromset/` namespace is missing, so Ollama looks in its official library | `ollama run Tromset/fly1.0:lite` |
+| `file does not exist` after `ollama run Tromset/fly1.0` | no tag means `latest`, which was not published before | add `:lite`, or republish with `sh scripts/publish.sh Tromset fly1.0:latest` |
+| `requires a newer version of Ollama` | `lite` needs Ollama 0.13.1 or later (Ministral 3) | update Ollama |
+| `ollama list` does not show it | the model is downloaded on first use only | `ollama pull Tromset/fly1.0:lite` |
+
+To build it locally from this repository instead: `ollama create fly1.0:lite -f Modelfile.lite`, then `ollama run fly1.0:lite`.
+
 ## FlyBrain: Le Chonk only when it is needed
 
 FlyBrain is a small, dependency-free Node 22 server in front of Ollama, taken from FlyCoder. It answers to `fly1.0` (and `fly`):
