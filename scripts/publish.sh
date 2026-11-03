@@ -9,8 +9,10 @@ set -eu
 
 VERSION=1.0
 # Modelfile, published name. Keep in sync with docs/ollama/ and README.md.
+# fly1.0:latest is lite, so that a bare `ollama run <user>/fly1.0` works instead of answering "file does not exist".
 MODELS='Modelfile.ultra fly1.0:ultra
-Modelfile.lite fly1.0:lite'
+Modelfile.lite fly1.0:lite
+Modelfile.lite fly1.0:latest'
 
 die() { printf 'Fly: %s\n' "$*" >&2; exit 1; }
 
@@ -42,3 +44,4 @@ done
 printf '\nPublished Fly %s. Anyone can now run:\n' "$VERSION"
 printf '  ollama run %s/fly1.0:ultra    (Le Chonk in the cloud, after ollama signin)\n' "$user"
 printf '  ollama run %s/fly1.0:lite     (local, Macs with 8 GB or more)\n' "$user"
+printf '  ollama run %s/fly1.0          (same as lite)\n' "$user"
