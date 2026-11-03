@@ -18,6 +18,8 @@ ollama run Tromset/fly1.0:lite       # local, Macs with 8 GB or more
 - **Security for defenders**: `ultra` finds and fixes vulnerabilities, hardens code, and refuses to write attacks.
 - **Light on memory**: FlyBrain (in the GitHub repository) answers to `fly1.0`, sends simple questions to `lite` and hard requests, tools and long contexts to `ultra`.
 
+`ultra` needs paid Ollama cloud usage: Mistral Large 4 is not in the free cloud plan (`402 Payment Required` otherwise).
+
 Mistral's sampling: temperature 1.0 and top_p 0.95 for `ultra`, temperature 0.05 for `lite`.
 
 Licenses: Mistral Large 4 under the Mistral Ecosystem Open-Weight License, Ministral 3 under Apache 2.0.

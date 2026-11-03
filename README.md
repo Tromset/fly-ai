@@ -15,6 +15,8 @@ ollama run Tromset/fly1.0:lite       # local, Macs with 8 GB or more
 | [`Tromset/fly1.0:ultra`](https://ollama.com/Tromset/fly1.0) | Mistral Large 4 "Le Chonk", 1T parameters (52B active) | Ollama cloud | no local memory | 1M tokens |
 | [`Tromset/fly1.0:lite`](https://ollama.com/Tromset/fly1.0) | Ministral 3 8B, GGUF Q4_K_M | your computer | 6.0 GB | 8,192 tokens |
 
+> **`ultra` needs paid Ollama cloud usage.** Mistral Large 4 is not in Ollama's free cloud plan: without usage credits or a paid plan on the account that runs it, `ollama run Tromset/fly1.0:ultra` answers `402 Payment Required` ([ollama.com/settings](https://ollama.com/settings), [ollama.com/upgrade](https://ollama.com/upgrade)). `lite` and FlyBrain's simple route stay free and local.
+
 ### Why ultra runs in the cloud
 
 Le Chonk does not fit on any Mac, even compressed. Its smallest published quantization (IQ1_S, about 1.9 bits per weight) weighs 233 GB, and Q4_K_M weighs 605 GB. FlyCoder's method keeps the heavy model where it fits. `ultra` uses Ollama's cloud copy (`mistral-large-4:cloud`) with the FlyCoder settings, and the local work goes to `lite`, a quantized 6 GB model.
@@ -29,7 +31,7 @@ FlyBrain is a small, dependency-free Node 22 server in front of Ollama, taken fr
 | Tools (agents), long context, several code blocks, a detailed spec, debugging, security, algorithms | `fly1.0:ultra`, cloud |
 | Unclear | `fly1.0:ultra`, which costs no local memory |
 
-A conversation keeps its expert and can only move up to `ultra`. A call to `ultra` does not unload `lite`.
+A conversation keeps its expert and can only move up to `ultra`. A call to `ultra` does not unload `lite`. Without paid cloud usage, requests routed to `ultra` come back with Ollama's `402 Payment Required`, unchanged.
 
 ```sh
 ollama pull Tromset/fly1.0:lite && ollama pull Tromset/fly1.0:ultra
