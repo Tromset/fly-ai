@@ -1,8 +1,8 @@
-# Fly 1.0 lite: the light expert of the Fly 1.0 range, for simple coding requests, on Macs with 8 GB or more.
+# Fly 1.1 lite: the light expert of the Fly range (4.7 GB, replaces the 6.0 GB fly1.0:lite), for simple coding requests, on Macs with 8 GB or more.
 # Base: Ministral 3 8B by Mistral AI (Apache 2.0), text only, GGUF IQ4_XS with Unsloth's importance matrix: 4.7 GB,
 # against 6.0 GB for ministral-3:8b (Q4_K_M at 5.2 GB plus a 0.8 GB image encoder that coding does not use).
 # FlyBrain sends it the simple requests made to fly1.0; Le Chonk (fly1.0:ultra) gets the hard ones and the images.
-# Published as Tromset/fly1.0:lite. Build: sh scripts/weights.sh Modelfile.lite && ollama create fly1.0:lite -f Modelfile.lite
+# Published as Tromset/fly1.1:lite. Build: sh scripts/weights.sh Modelfile.lite && ollama create fly1.1:lite -f Modelfile.lite
 # Weights: https://huggingface.co/unsloth/Ministral-3-8B-Instruct-2512-GGUF/resolve/main/Ministral-3-8B-Instruct-2512-IQ4_XS.gguf sha256:3943e2774dd4a5c8b3bd2268cc5eced94f317ec97f611d71cb6f21940d4da8bc
 FROM ./models/Ministral-3-8B-Instruct-2512-IQ4_XS.gguf
 REQUIRES 0.13.1
@@ -35,7 +35,7 @@ PARAMETER num_ctx 8192
 # Mistral's recommendation for Ministral 3: a temperature below 0.1.
 PARAMETER temperature 0.05
 
-SYSTEM """You are Fly 1.0 lite, a local coding model built on Ministral 3 8B by Mistral AI and configured by the Fly project. You read text only.
+SYSTEM """You are Fly 1.1 lite, a local coding model built on Ministral 3 8B by Mistral AI and configured by the Fly project. You read text only.
 
 Code like a careful senior engineer:
 - Follow the request exactly: keep the names, signatures, files, language and export style given.

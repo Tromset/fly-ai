@@ -5,13 +5,13 @@ The Fly 1.0 range is built on Mistral's open-weight models. Le Chonk (Mistral La
 ```sh
 ollama signin                        # once: ultra runs in Ollama's cloud
 ollama run Tromset/fly1.0:ultra      # Le Chonk, for hard work and agents
-ollama run Tromset/fly1.0:lite       # local, 4.7 GB, Macs with 8 GB or more
+ollama run Tromset/fly1.1:lite       # local, 4.7 GB, Macs with 8 GB or more
 ```
 
 | Tag | Base | Runs | Size | Context |
 |---|---|---|---|---|
 | `ultra` | Mistral Large 4 "Le Chonk", 1T parameters (52B active) | Ollama cloud | no local memory | 1M tokens |
-| `lite` | Ministral 3 8B (Apache 2.0), text only, IQ4_XS | your computer | 4.7 GB | 8K tokens |
+| `lite` (now `Tromset/fly1.1:lite`) | Ministral 3 8B (Apache 2.0), text only, IQ4_XS | your computer | 4.7 GB | 8K tokens |
 
 - **Code that runs**: exact names and signatures, every import, edge cases handled, a final check before answering, no "TODO", no invented APIs.
 - **Built for agents**: `ultra` reads files before editing, makes minimal changes, reports real test output, never runs a destructive command without asking.

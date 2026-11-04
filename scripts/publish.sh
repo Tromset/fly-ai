@@ -1,18 +1,19 @@
 #!/bin/sh
-# Publishes the Fly 1.0 range on ollama.com: <user>/fly1.0:ultra (Le Chonk, cloud) and <user>/fly1.0:lite (local).
+# Publishes the Fly range on ollama.com: <user>/fly1.0:ultra (Le Chonk, cloud) and <user>/fly1.1:lite (local).
 #   sh scripts/publish.sh [<ollama.com username>] [<name> ...]
-# Default user: Tromset. Default names: every model below. Example: sh scripts/publish.sh Tromset fly1.0:lite
+# Default user: Tromset. Default names: every model below. Example: sh scripts/publish.sh Tromset fly1.1:lite
 # Prerequisite: this machine's Ollama key is linked to the account (`ollama signin` once).
 # fly1.0:ultra is built on a cloud model: the signed-in key is also what lets Ollama reach it.
 #   FLY_PRUNE=1  removes each model and its pulled base after the push, to keep the disk free
 set -eu
 
-VERSION=1.0
+VERSION=1.1
 # Modelfile, published name. Keep in sync with docs/ollama/ and README.md.
-# fly1.0:latest is lite, so that a bare `ollama run <user>/fly1.0` works instead of answering "file does not exist".
+# lite moved to 1.1 with its 4.7 GB weights; ultra stays fly1.0:ultra.
+# fly1.1:latest is lite, so that a bare `ollama run <user>/fly1.1` works instead of answering "file does not exist".
 MODELS='Modelfile.ultra fly1.0:ultra
-Modelfile.lite fly1.0:lite
-Modelfile.lite fly1.0:latest'
+Modelfile.lite fly1.1:lite
+Modelfile.lite fly1.1:latest'
 
 die() { printf 'Fly: %s\n' "$*" >&2; exit 1; }
 
@@ -44,5 +45,5 @@ done
 
 printf '\nPublished Fly %s. Anyone can now run:\n' "$VERSION"
 printf '  ollama run %s/fly1.0:ultra    (Le Chonk in the cloud, after ollama signin)\n' "$user"
-printf '  ollama run %s/fly1.0:lite     (local, 4.7 GB, Macs with 8 GB or more)\n' "$user"
-printf '  ollama run %s/fly1.0          (same as lite)\n' "$user"
+printf '  ollama run %s/fly1.1:lite     (local, 4.7 GB, Macs with 8 GB or more)\n' "$user"
+printf '  ollama run %s/fly1.1          (same as lite)\n' "$user"

@@ -5,7 +5,7 @@ Fly 1.0 is a new range of coding models for [Ollama](https://ollama.com), from t
 ```sh
 ollama signin                        # once: ultra runs in Ollama's cloud
 ollama run Tromset/fly1.0:ultra      # Le Chonk, for hard work, agents and security
-ollama run Tromset/fly1.0:lite       # local, 4.7 GB, Macs with 8 GB or more
+ollama run Tromset/fly1.1:lite       # local, 4.7 GB, Macs with 8 GB or more
 ```
 
 ## The models
@@ -13,7 +13,7 @@ ollama run Tromset/fly1.0:lite       # local, 4.7 GB, Macs with 8 GB or more
 | Model | Base | Runs | Weights | Context |
 |---|---|---|---|---|
 | [`Tromset/fly1.0:ultra`](https://ollama.com/Tromset/fly1.0) | Mistral Large 4 "Le Chonk", 1T parameters (52B active) | Ollama cloud | no local memory | 1M tokens |
-| [`Tromset/fly1.0:lite`](https://ollama.com/Tromset/fly1.0) | Ministral 3 8B, text only, GGUF IQ4_XS | your computer | 4.7 GB | 8,192 tokens |
+| [`Tromset/fly1.1:lite`](https://ollama.com/Tromset/fly1.1) | Ministral 3 8B, text only, GGUF IQ4_XS | your computer | 4.7 GB | 8,192 tokens |
 
 > **`ultra` needs paid Ollama cloud usage.** Mistral Large 4 is not in Ollama's free cloud plan: without usage credits or a paid plan on the account that runs it, `ollama run Tromset/fly1.0:ultra` answers `402 Payment Required` ([ollama.com/settings](https://ollama.com/settings), [ollama.com/upgrade](https://ollama.com/upgrade)). `lite` and FlyBrain's simple route stay free and local.
 
@@ -25,7 +25,7 @@ Le Chonk does not fit on any Mac, even compressed. Its smallest published quanti
 
 `ministral-3:8b` from Ollama's library weighs 6.0 GB: 5.2 GB of Q4_K_M text weights and a 0.8 GB image encoder. `lite` keeps the same Ministral 3 8B and drops what a coding expert does not use:
 
-| | `ministral-3:8b` | `fly1.0:lite` | Saved |
+| | `ministral-3:8b` | `fly1.1:lite` | Saved |
 |---|---|---|---|
 | Image encoder | 0.8 GB | none: FlyBrain sends images to `ultra`, which reads them | 0.8 GB |
 | Text weights | Q4_K_M, 5.2 GB | IQ4_XS with Unsloth's importance matrix, 4.7 GB | 0.5 GB |
@@ -33,18 +33,22 @@ Le Chonk does not fit on any Mac, even compressed. Its smallest published quanti
 
 IQ4_XS stays at about 4.25 bits per weight, the importance matrix spends them where the model is most sensitive, and its quality is close to Q4_K_M's. Below 4 bits (Q3_K_M, 4.2 GB) code quality drops noticeably, so `lite` stops here. The weights come from [unsloth/Ministral-3-8B-Instruct-2512-GGUF](https://huggingface.co/unsloth/Ministral-3-8B-Instruct-2512-GGUF): `scripts/weights.sh` downloads them and checks their SHA-256 before `ollama create`.
 
-### `fly1.0:lite` cannot be found
+### `fly1.1:lite` replaces `fly1.0:lite`
 
-`Tromset/fly1.0:lite` is published on [ollama.com/Tromset/fly1.0](https://ollama.com/Tromset/fly1.0/tags) and built from `Modelfile.lite`. When Ollama says it does not exist, the cause is almost always the command:
+`fly1.1:lite` is the 4.7 GB version below. `Tromset/fly1.0:lite` stays on ollama.com unchanged (6.0 GB) for those who already use it, and FlyBrain now sends simple requests to `fly1.1:lite`.
+
+### `fly1.1:lite` cannot be found
+
+`Tromset/fly1.1:lite` is published on [ollama.com/Tromset/fly1.1](https://ollama.com/Tromset/fly1.1/tags) and built from `Modelfile.lite`. When Ollama says it does not exist, the cause is almost always the command:
 
 | Ollama says | Cause | Fix |
 |---|---|---|
-| `pull model manifest: file does not exist` after `ollama run fly1.0:lite` | the `Tromset/` namespace is missing, so Ollama looks in its official library | `ollama run Tromset/fly1.0:lite` |
-| `file does not exist` after `ollama run Tromset/fly1.0` | no tag means `latest`, which was not published before | add `:lite`, or republish with `sh scripts/publish.sh Tromset fly1.0:latest` |
+| `pull model manifest: file does not exist` after `ollama run fly1.1:lite` | the `Tromset/` namespace is missing, so Ollama looks in its official library | `ollama run Tromset/fly1.1:lite` |
+| `file does not exist` after `ollama run Tromset/fly1.1` | no tag means `latest`, which was not published | add `:lite`, or republish with `sh scripts/publish.sh Tromset fly1.1:latest` |
 | `requires a newer version of Ollama` | `lite` needs Ollama 0.13.1 or later (Ministral 3) | update Ollama |
-| `ollama list` does not show it | the model is downloaded on first use only | `ollama pull Tromset/fly1.0:lite` |
+| `ollama list` does not show it | the model is downloaded on first use only | `ollama pull Tromset/fly1.1:lite` |
 
-To build it locally from this repository instead: `sh scripts/weights.sh Modelfile.lite` (4.7 GB download, checked), `ollama create fly1.0:lite -f Modelfile.lite`, then `ollama run fly1.0:lite`.
+To build it locally from this repository instead: `sh scripts/weights.sh Modelfile.lite` (4.7 GB download, checked), `ollama create fly1.1:lite -f Modelfile.lite`, then `ollama run fly1.1:lite`.
 
 ## FlyBrain: Le Chonk only when it is needed
 
@@ -52,14 +56,14 @@ FlyBrain is a small, dependency-free Node 22 server in front of Ollama, taken fr
 
 | Request | Expert |
 |---|---|
-| Short question ("what is", "how do I", "explique"...) | `fly1.0:lite`, local |
+| Short question ("what is", "how do I", "explique"...) | `fly1.1:lite`, local |
 | Tools (agents), images, long context, several code blocks, a detailed spec, debugging, security, algorithms | `fly1.0:ultra`, cloud |
 | Unclear | `fly1.0:ultra`, which costs no local memory |
 
 A conversation keeps its expert and can only move up to `ultra`. `lite` is the only local model and `ultra` uses no local memory, so FlyBrain never unloads anything. Without paid cloud usage, requests routed to `ultra` come back with Ollama's `402 Payment Required`, unchanged.
 
 ```sh
-ollama pull Tromset/fly1.0:lite && ollama pull Tromset/fly1.0:ultra
+ollama pull Tromset/fly1.1:lite && ollama pull Tromset/fly1.0:ultra
 npm run brain                                   # node brain/flybrain.mjs --prefix Tromset/
 OLLAMA_HOST=127.0.0.1:11435 ollama run fly1.0
 ```
@@ -78,7 +82,7 @@ From a machine signed in to the Tromset account (`ollama signin`, then approve t
 
 ```sh
 sh scripts/publish.sh                    # every model
-sh scripts/publish.sh Tromset fly1.0:lite  # one model
+sh scripts/publish.sh Tromset fly1.1:lite  # one model
 ```
 
 The ollama.com page is pasted by hand from `docs/ollama/fly1.0.md`.

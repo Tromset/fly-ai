@@ -19,7 +19,7 @@ function parse(text) {
 const VARIANTS = [
   { file: 'Modelfile.ultra', name: 'fly1.0:ultra', from: 'mistral-large-4:cloud', title: 'Fly 1.0 ultra', base: 'Mistral Large 4 by Mistral AI',
     params: { temperature: '1', top_p: '0.95' }, requires: [] },
-  { file: 'Modelfile.lite', name: 'fly1.0:lite', from: './models/Ministral-3-8B-Instruct-2512-IQ4_XS.gguf', title: 'Fly 1.0 lite', base: 'Ministral 3 8B by Mistral AI',
+  { file: 'Modelfile.lite', name: 'fly1.1:lite', from: './models/Ministral-3-8B-Instruct-2512-IQ4_XS.gguf', title: 'Fly 1.1 lite', base: 'Ministral 3 8B by Mistral AI',
     params: { num_ctx: '8192', temperature: '0.05' }, requires: ['0.13.1'], parser: ['ministral'] }
 ];
 
@@ -57,7 +57,7 @@ test('lite is built from a checked, text-only IQ4_XS GGUF of Ministral 3 8B', ()
 
 test('publish.sh publishes every Modelfile under its name, and the page lists them', () => {
   const publish = read('scripts/publish.sh'), page = read('docs/ollama/fly1.0.md'), readme = read('README.md');
-  assert.match(publish, /^VERSION=1\.0$/m);
+  assert.match(publish, /^VERSION=1\.1$/m);
   for (const v of VARIANTS) {
     assert.match(publish, new RegExp(`^(MODELS=')?${v.file.replace('.', '\\.')} ${v.name}'?$`, 'm'), `publish.sh publishes ${v.file} as ${v.name}`);
     for (const doc of [page, readme]) assert.ok(doc.includes(`ollama run Tromset/${v.name}`), `${v.name} documented`);

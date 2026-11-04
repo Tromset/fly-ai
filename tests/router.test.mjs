@@ -35,7 +35,7 @@ test('digest reads native, OpenAI and Anthropic shapes', () => {
 
 test('route: simple to lite, hard and unclear to ultra', () => {
   const profile = profiles()['fly1.0'];
-  assert.equal(route('fly1.0', user('How do I reverse a list in Python?'), { profile }).expert, 'fly1.0:lite');
+  assert.equal(route('fly1.0', user('How do I reverse a list in Python?'), { profile }).expert, 'fly1.1:lite');
   assert.equal(route('fly1.0', user('Débogue cette fonction'), { profile }).expert, 'fly1.0:ultra');
   const unclear = route('fly1.0', user('Écris une fonction qui met une chaîne en majuscules'), { profile });
   assert.deepEqual([unclear.expert, unclear.reason], ['fly1.0:ultra', 'unclear, keeping quality']);
@@ -53,10 +53,10 @@ test('route: a conversation keeps its expert and can only move up', () => {
 
 test('profiles: names and prefix for published models', () => {
   const published = profiles('Tromset/');
-  for (const n of ['fly', 'fly1.0', 'fly1.0:latest', 'Tromset/fly1.0', 'Tromset/fly1.0:latest'])
-    assert.deepEqual([published[n].simple, published[n].hard], ['Tromset/fly1.0:lite', 'Tromset/fly1.0:ultra'], n);
+  for (const n of ['fly', 'fly1.0', 'fly1.1', 'fly1.0:latest', 'Tromset/fly1.0', 'Tromset/fly1.1:latest'])
+    assert.deepEqual([published[n].simple, published[n].hard], ['Tromset/fly1.1:lite', 'Tromset/fly1.0:ultra'], n);
   assert.equal(published['Tromset/fly1.0:ultra'], undefined, 'experts called by name are passed through');
-  assert.equal(published['Tromset/fly1.0:lite'], undefined);
+  assert.equal(published['Tromset/fly1.1:lite'], undefined);
 });
 
 // A fake Ollama that records requests and the models it holds in memory.
@@ -86,14 +86,14 @@ test('FlyBrain server: lite for simple, ultra in the cloud for hard, lite stays 
   const post = (path, body) => fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   try {
     const simple = await post('/api/chat', { model: 'fly1.0', ...user('How do I reverse a list in Python?') });
-    assert.equal(simple.headers.get('x-flybrain-expert'), 'Tromset/fly1.0:lite');
+    assert.equal(simple.headers.get('x-flybrain-expert'), 'Tromset/fly1.1:lite');
     assert.match(await simple.text(), /"done":true/);
     assert.equal(ollama.seen.at(-1).think, undefined, 'thinking is left to the client');
 
     const hard = await post('/v1/messages', { model: 'fly', max_tokens: 10, tools: [{ name: 'read', input_schema: {} }], messages: [{ role: 'user', content: 'hi' }] });
     assert.equal(hard.headers.get('x-flybrain-expert'), 'Tromset/fly1.0:ultra');
     await hard.text();
-    assert.ok(ollama.loaded.has('Tromset/fly1.0:lite'), 'the cloud expert does not unload the local one');
+    assert.ok(ollama.loaded.has('Tromset/fly1.1:lite'), 'the cloud expert does not unload the local one');
     assert.ok(!ollama.seen.some(r => r.keep_alive === 0), 'nothing was unloaded');
 
     const show = await post('/api/show', { model: 'fly1.0' });
