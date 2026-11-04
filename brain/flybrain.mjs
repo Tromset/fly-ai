@@ -10,38 +10,12 @@ import { Memory, profiles, route } from './router.mjs';
 
 const ROUTED = new Set(['/api/chat', '/api/generate', '/v1/chat/completions', '/v1/messages', '/v1/completions']);
 
-// One expert at a time: a request for another expert waits for the running ones,
-// then the previous expert (and the micro-model, before a large expert) is unloaded.
-export class Scheduler {
-  constructor(unload) { this.unload = unload; this.current = null; this.active = 0; this.queue = []; this.switching = null; }
-  async acquire(expert, evict = []) {
-    while (this.switching || ((this.current !== expert || this.queue.length) && this.active > 0)) await (this.switching || new Promise(resolve => this.queue.push(resolve)));
-    if (this.current !== expert) {
-      const stale = [this.current, ...evict].filter(m => m && m !== expert);
-      this.switching = Promise.all(stale.map(m => this.unload(m).catch(() => {}))).then(() => { this.current = expert; this.switching = null; });
-      await this.switching;
-    }
-    this.active++;
-    let released = false;
-    return () => { if (released) return; released = true; if (--this.active === 0) this.queue.splice(0).forEach(resolve => resolve()); };
-  }
-}
-
-export function createFlyBrain({ ollama = 'http://127.0.0.1:11434', prefix = '', log = console.error, routerTimeoutMs = 8000 } = {}) {
+// There is a single local expert (lite) and ultra uses no local memory, so nothing ever has to be unloaded:
+// FlyBrain only rewrites the model name and streams Ollama's answer back.
+export function createFlyBrain({ ollama = 'http://127.0.0.1:11434', prefix = '', log = console.error } = {}) {
   const upstream = ollama.replace(/\/$/, '');
   const table = profiles(prefix);
   const memory = new Memory();
-  const post = (path, body, signal) => fetch(upstream + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal });
-  const scheduler = new Scheduler(model => post('/api/generate', { model, keep_alive: 0 }).then(r => r.arrayBuffer()));
-  const routers = new Set(Object.values(table).map(p => p.router).filter(Boolean));
-
-  async function askRouter(model, text) {
-    const response = await post('/api/chat', { model, stream: false, think: false, keep_alive: '10m', messages: [{ role: 'user', content: text }],
-      format: { type: 'object', properties: { level: { type: 'string', enum: ['simple', 'hard'] } }, required: ['level'] },
-      options: { temperature: 0, num_predict: 16 } }, AbortSignal.timeout(routerTimeoutMs));
-    if (!response.ok) throw new Error(`router ${response.status}`);
-    return JSON.parse((await response.json()).message?.content || '{}').level;
-  }
 
   async function forward(req, res, path, body, headers = {}) {
     const raw = body === undefined ? undefined : Buffer.isBuffer(body) ? body : JSON.stringify(body);
@@ -63,21 +37,12 @@ export function createFlyBrain({ ollama = 'http://127.0.0.1:11434', prefix = '',
     let body; try { body = raw.length ? JSON.parse(raw) : undefined; } catch {}
     const profile = body && table[body.model];
     if (!profile || !(ROUTED.has(path) || path === '/api/show')) return forward(req, res, req.url, raw.length ? raw : undefined);
-    // Metadata (tools, thinking, context) comes from the strongest expert.
+    // Metadata (tools, thinking, vision, context) comes from the strongest expert.
     if (path === '/api/show') return forward(req, res, req.url, { ...body, model: profile.hard });
 
-    const decision = await route(body.model, body, { profile, memory, askRouter, loaded: scheduler.current });
+    const decision = route(body.model, body, { profile, memory });
     log(`[flybrain] ${body.model} → ${decision.expert} (${decision.level}: ${decision.reason})`);
-    const rewritten = { ...body, model: decision.expert };
-    // A profile with `think` turns thinking on unless the client said otherwise.
-    if (profile.think && rewritten.think === undefined && (path === '/api/chat' || path === '/api/generate')) rewritten.think = true;
-    // A cloud expert uses no local memory: it neither waits for nor unloads the local one.
-    const cloud = profile.cloud?.includes(decision.expert);
-    const evict = !cloud && decision.expert === profile.hard && profile.hard !== profile.simple ? [...routers] : [];
-    const release = cloud ? () => {} : await scheduler.acquire(decision.expert, evict);
-    res.on('close', release);
-    try { await forward(req, res, req.url, rewritten, { 'x-flybrain-expert': decision.expert, 'x-flybrain-reason': `${decision.level}: ${decision.reason}` }); }
-    finally { release(); }
+    await forward(req, res, req.url, { ...body, model: decision.expert }, { 'x-flybrain-expert': decision.expert, 'x-flybrain-reason': `${decision.level}: ${decision.reason}` });
   }
 
   return http.createServer((req, res) => handle(req, res).catch(error => {
