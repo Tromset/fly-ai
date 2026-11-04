@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { digest, ruleRoute, route, profiles, Memory } from '../brain/router.mjs';
-import { createFlyBrain, Scheduler } from '../brain/flybrain.mjs';
+import { createFlyBrain } from '../brain/flybrain.mjs';
 
 const user = content => ({ messages: [{ role: 'user', content }] });
 const level = body => ruleRoute(digest(body)).level;
@@ -17,6 +17,15 @@ test('rules: short questions are simple, agents and long or detailed requests ar
   assert.equal(level(user('Écris une fonction qui met une chaîne en majuscules')), 'unsure');
 });
 
+test('rules: images go to ultra, lite reads text only', () => {
+  const q = 'What is this?';
+  assert.equal(level({ messages: [{ role: 'user', content: q, images: ['iVBOR'] }] }), 'hard', 'native');
+  assert.equal(level({ prompt: q, images: ['iVBOR'] }), 'hard', '/api/generate');
+  assert.equal(level(user([{ type: 'text', text: q }, { type: 'image_url', image_url: { url: 'data:' } }])), 'hard', 'OpenAI');
+  assert.equal(level(user([{ type: 'image', source: {} }, { type: 'text', text: q }])), 'hard', 'Anthropic');
+  assert.equal(level({ messages: [{ role: 'user', content: q, images: [] }] }), 'simple', 'an empty list is no image');
+});
+
 test('digest reads native, OpenAI and Anthropic shapes', () => {
   assert.equal(digest({ prompt: 'hello' }).last, 'hello');
   assert.equal(digest({ messages: [{ role: 'user', content: [{ type: 'text', text: 'a' }, { type: 'image_url' }] }] }).last, 'a\n');
@@ -24,43 +33,30 @@ test('digest reads native, OpenAI and Anthropic shapes', () => {
   assert.deepEqual([anthropic.first, anthropic.last, anthropic.turns], ['first', 'out', 2]);
 });
 
-test('route: simple to lite, hard and unclear to ultra, never a micro-model', async () => {
+test('route: simple to lite, hard and unclear to ultra', () => {
   const profile = profiles()['fly1.0'];
-  const never = () => assert.fail('no micro-model in Fly 1.0');
-  assert.equal((await route('fly1.0', user('How do I reverse a list in Python?'), { profile, askRouter: never })).expert, 'fly1.0:lite');
-  assert.equal((await route('fly1.0', user('Débogue cette fonction'), { profile, askRouter: never })).expert, 'fly1.0:ultra');
-  const unclear = await route('fly1.0', user('Écris une fonction qui met une chaîne en majuscules'), { profile, askRouter: never });
+  assert.equal(route('fly1.0', user('How do I reverse a list in Python?'), { profile }).expert, 'fly1.0:lite');
+  assert.equal(route('fly1.0', user('Débogue cette fonction'), { profile }).expert, 'fly1.0:ultra');
+  const unclear = route('fly1.0', user('Écris une fonction qui met une chaîne en majuscules'), { profile });
   assert.deepEqual([unclear.expert, unclear.reason], ['fly1.0:ultra', 'unclear, keeping quality']);
 });
 
-test('route: a conversation keeps its expert and can only move up', async () => {
+test('route: a conversation keeps its expert and can only move up', () => {
   const profile = profiles()['fly1.0'], memory = new Memory();
   const first = [{ role: 'user', content: 'Explique les closures.' }];
-  assert.equal((await route('fly1.0', { messages: first }, { profile, memory })).level, 'simple');
+  assert.equal(route('fly1.0', { messages: first }, { profile, memory }).level, 'simple');
   const turn2 = [...first, { role: 'assistant', content: '...' }, { role: 'user', content: 'Débogue ce code maintenant.' }];
-  assert.equal((await route('fly1.0', { messages: turn2 }, { profile, memory })).level, 'hard');
+  assert.equal(route('fly1.0', { messages: turn2 }, { profile, memory }).level, 'hard');
   const turn3 = [...turn2, { role: 'assistant', content: '...' }, { role: 'user', content: 'Merci, et pourquoi ?' }];
-  assert.equal((await route('fly1.0', { messages: turn3 }, { profile, memory })).level, 'hard');
+  assert.equal(route('fly1.0', { messages: turn3 }, { profile, memory }).level, 'hard');
 });
 
-test('profiles: names, prefix for published models, ultra is the cloud expert', () => {
+test('profiles: names and prefix for published models', () => {
   const published = profiles('Tromset/');
   for (const n of ['fly', 'fly1.0', 'fly1.0:latest', 'Tromset/fly1.0', 'Tromset/fly1.0:latest'])
     assert.deepEqual([published[n].simple, published[n].hard], ['Tromset/fly1.0:lite', 'Tromset/fly1.0:ultra'], n);
-  assert.deepEqual(published['fly1.0'].cloud, ['Tromset/fly1.0:ultra']);
   assert.equal(published['Tromset/fly1.0:ultra'], undefined, 'experts called by name are passed through');
   assert.equal(published['Tromset/fly1.0:lite'], undefined);
-});
-
-test('scheduler: a different expert waits for running requests, then the old one is unloaded', async () => {
-  const unloaded = [];
-  const s = new Scheduler(async m => { unloaded.push(m); });
-  const releaseA = await s.acquire('a');
-  const b = s.acquire('b');
-  releaseA();
-  (await b)();
-  assert.deepEqual(unloaded, ['a']);
-  assert.equal(s.current, 'b');
 });
 
 // A fake Ollama that records requests and the models it holds in memory.
@@ -92,7 +88,7 @@ test('FlyBrain server: lite for simple, ultra in the cloud for hard, lite stays 
     const simple = await post('/api/chat', { model: 'fly1.0', ...user('How do I reverse a list in Python?') });
     assert.equal(simple.headers.get('x-flybrain-expert'), 'Tromset/fly1.0:lite');
     assert.match(await simple.text(), /"done":true/);
-    assert.equal(ollama.seen.at(-1).think, undefined, 'thinking is left to the client: Ministral 3 8B has none');
+    assert.equal(ollama.seen.at(-1).think, undefined, 'thinking is left to the client');
 
     const hard = await post('/v1/messages', { model: 'fly', max_tokens: 10, tools: [{ name: 'read', input_schema: {} }], messages: [{ role: 'user', content: 'hi' }] });
     assert.equal(hard.headers.get('x-flybrain-expert'), 'Tromset/fly1.0:ultra');

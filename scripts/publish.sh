@@ -4,7 +4,7 @@
 # Default user: Tromset. Default names: every model below. Example: sh scripts/publish.sh Tromset fly1.0:lite
 # Prerequisite: this machine's Ollama key is linked to the account (`ollama signin` once).
 # fly1.0:ultra is built on a cloud model: the signed-in key is also what lets Ollama reach it.
-#   FLY_PRUNE=1  removes each model and its base after the push, to keep the disk free
+#   FLY_PRUNE=1  removes each model and its pulled base after the push, to keep the disk free
 set -eu
 
 VERSION=1.0
@@ -35,13 +35,14 @@ echo "$MODELS" | while read -r file name; do
   base=$(sed -n 's/^FROM //p' "$here/$file" | head -n 1)
   [ -n "$base" ] || die "$file has no FROM line."
   printf '\n==> %s/%s (%s, base %s)\n' "$user" "$name" "$file" "$base"
-  ollama pull "$base"
+  # A local GGUF (lite) is downloaded and checked; a library model (ultra) is pulled.
+  case $base in ./*) sh "$here/scripts/weights.sh" "$file"; pulled= ;; *) ollama pull "$base"; pulled=$base ;; esac
   ollama create "$user/$name" -f "$here/$file"
   ollama push "$user/$name"
-  if [ "${FLY_PRUNE:-0}" = 1 ]; then ollama rm "$user/$name" "$base" >/dev/null; fi
+  if [ "${FLY_PRUNE:-0}" = 1 ]; then ollama rm "$user/$name" $pulled >/dev/null; fi
 done
 
 printf '\nPublished Fly %s. Anyone can now run:\n' "$VERSION"
 printf '  ollama run %s/fly1.0:ultra    (Le Chonk in the cloud, after ollama signin)\n' "$user"
-printf '  ollama run %s/fly1.0:lite     (local, Macs with 8 GB or more)\n' "$user"
+printf '  ollama run %s/fly1.0:lite     (local, 4.7 GB, Macs with 8 GB or more)\n' "$user"
 printf '  ollama run %s/fly1.0          (same as lite)\n' "$user"

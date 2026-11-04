@@ -1,9 +1,33 @@
 # Fly 1.0 lite: the light expert of the Fly 1.0 range, for simple coding requests, on Macs with 8 GB or more.
-# Base: Ministral 3 8B by Mistral AI (Apache 2.0), GGUF Q4_K_M (6.0 GB): runs on Apple Silicon, Intel Macs, Linux and Windows.
-# FlyBrain sends it the simple requests made to fly1.0, and Le Chonk (fly1.0:ultra) gets the hard ones.
-# Published as Tromset/fly1.0:lite. Build: ollama create fly1.0:lite -f Modelfile.lite
-FROM ministral-3:8b
+# Base: Ministral 3 8B by Mistral AI (Apache 2.0), text only, GGUF IQ4_XS with Unsloth's importance matrix: 4.7 GB,
+# against 6.0 GB for ministral-3:8b (Q4_K_M at 5.2 GB plus a 0.8 GB image encoder that coding does not use).
+# FlyBrain sends it the simple requests made to fly1.0; Le Chonk (fly1.0:ultra) gets the hard ones and the images.
+# Published as Tromset/fly1.0:lite. Build: sh scripts/weights.sh Modelfile.lite && ollama create fly1.0:lite -f Modelfile.lite
+# Weights: https://huggingface.co/unsloth/Ministral-3-8B-Instruct-2512-GGUF/resolve/main/Ministral-3-8B-Instruct-2512-IQ4_XS.gguf sha256:3943e2774dd4a5c8b3bd2268cc5eced94f317ec97f611d71cb6f21940d4da8bc
+FROM ./models/Ministral-3-8B-Instruct-2512-IQ4_XS.gguf
 REQUIRES 0.13.1
+
+# Ollama's ministral-3 chat template and tool-call parser, without Le Chat's default system prompt (SYSTEM below replaces it).
+TEMPLATE """{{- $lastUserIndex := -1 }}
+{{- range $index, $_ := .Messages }}{{ if eq .Role "user" }}{{ $lastUserIndex = $index }}{{ end }}{{ end }}
+{{- range $index, $_ := .Messages }}
+{{- if eq .Role "system" }}[SYSTEM_PROMPT]{{ .Content }}[/SYSTEM_PROMPT]
+{{- else if eq .Role "user" }}
+{{- if and (eq $lastUserIndex $index) $.Tools }}[AVAILABLE_TOOLS]{{ $.Tools }}[/AVAILABLE_TOOLS]
+{{- end }}[INST]{{ .Content }}[/INST]
+{{- else if eq .Role "assistant" }}
+{{- if .Content }}{{ .Content }}
+{{- if and (not .ToolCalls) (not (eq (len (slice $.Messages $index)) 1)) }}</s>
+{{- end }}
+{{- end }}
+{{- if .ToolCalls }}[TOOL_CALLS]
+{{- range .ToolCalls }}{{ .Function.Name }}[ARGS]{{ .Function.Arguments }}
+{{- end }}</s>
+{{- end }}
+{{- else if eq .Role "tool" }}[TOOL_RESULTS]{{ .Content }}[/TOOL_RESULTS]
+{{- end }}
+{{- end }}"""
+PARSER ministral
 
 # Simple requests are short: 8K tokens keeps the cache small.
 PARAMETER num_ctx 8192
@@ -11,15 +35,14 @@ PARAMETER num_ctx 8192
 # Mistral's recommendation for Ministral 3: a temperature below 0.1.
 PARAMETER temperature 0.05
 
-SYSTEM """You are Fly 1.0 lite, a coding model running locally on the user's computer through Ollama. You are built on Ministral 3 8B by Mistral AI, configured by the Fly project.
+SYSTEM """You are Fly 1.0 lite, a local coding model built on Ministral 3 8B by Mistral AI and configured by the Fly project. You read text only.
 
-Write code the way a careful senior engineer would:
-- Follow the request exactly: keep the names, signatures, file names, language and export style the user gives.
-- Deliver complete, runnable code with every import it needs. No placeholders, no "TODO", no "rest of the code here".
-- Handle edge cases on purpose: empty input, missing values, boundaries, invalid arguments (raise or return exactly as specified), Unicode.
-- Prefer the standard library and the existing style of the project. Never invent functions, options or packages; if you are not sure an API exists, say so.
-- Before answering, check your code against the request once more, and fix what you find.
-- Never claim that you ran code or tests. When useful, give a short command or test the user can run.
-- Do not write insecure code: no hard-coded secrets, parameterized SQL queries, validated untrusted input, no shell injection.
+Code like a careful senior engineer:
+- Follow the request exactly: keep the names, signatures, files, language and export style given.
+- Give complete, runnable code with its imports. No placeholders, no "TODO", no "rest of the code here".
+- Handle edge cases: empty, missing or invalid input, boundaries, Unicode.
+- Prefer the standard library and the project's style. Never invent functions, options or packages; say so when unsure.
+- Check the code against the request before answering. Never claim you ran it; suggest a command to test it.
+- Write secure code: no hard-coded secrets, parameterized SQL, validated input, no shell injection.
 
-Format: each file goes in one fenced code block with a language tag, preceded by its path when there are several files. Keep explanations short and write them in the user's language."""
+One fenced code block per file, with a language tag and its path when there are several. Keep explanations short and write them in the user's language."""
