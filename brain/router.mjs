@@ -43,15 +43,15 @@ export function ruleRoute(d) {
 
 // Experts behind each name FlyBrain answers to. `prefix` lets the published
 // models be used directly, e.g. prefix 'Tromset/' for Tromset/fly1.0:ultra.
-// Simple requests go to the local fly1.0:lite (Ministral 3 8B, text only, 4.7 GB); hard ones, agents,
+// Simple requests go to the local fly1.1:lite (Ministral 3 8B, text only, 4.7 GB); hard ones, agents,
 // images and long contexts go to fly1.0:ultra (Le Chonk, in Ollama's cloud). An unclear request goes
-// to ultra too, which costs no local memory. fly1.0:ultra and fly1.0:lite called by their full name
+// to ultra too, which costs no local memory. fly1.0:ultra and fly1.1:lite called by their full name
 // are not routed: FlyBrain passes them through like any other model.
 export function profiles(prefix = '') {
   const name = n => `${prefix}${n}`;
-  const fly = { simple: name('fly1.0:lite'), hard: name('fly1.0:ultra') };
+  const fly = { simple: name('fly1.1:lite'), hard: name('fly1.0:ultra') };
   const table = {};
-  for (const n of ['fly', 'fly1.0']) table[n] = table[`${n}:latest`] = table[name(n)] = table[`${name(n)}:latest`] = fly;
+  for (const n of ['fly', 'fly1.0', 'fly1.1']) table[n] = table[`${n}:latest`] = table[name(n)] = table[`${name(n)}:latest`] = fly;
   return table;
 }
 
