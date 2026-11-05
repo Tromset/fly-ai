@@ -62,6 +62,7 @@ test('publish.sh publishes every Modelfile under its name, and the page lists th
     assert.match(publish, new RegExp(`^(MODELS=')?${v.file.replace('.', '\\.')} ${v.name}'?$`, 'm'), `publish.sh publishes ${v.file} as ${v.name}`);
     for (const doc of [page, readme]) assert.ok(doc.includes(`ollama run Tromset/${v.name}`), `${v.name} documented`);
   }
+  for (const name of ['fly1.1:lite', 'fly1.1']) assert.ok(read('docs/ollama/fly1.1.md').includes(`ollama run Tromset/${name} `), `fly1.1 page: ${name}`);
   execFileSync('sh', ['-n', new URL('../scripts/publish.sh', import.meta.url).pathname]);
 });
 

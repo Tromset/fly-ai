@@ -85,7 +85,7 @@ sh scripts/publish.sh                    # every model
 sh scripts/publish.sh Tromset fly1.1:lite  # one model
 ```
 
-The ollama.com page is pasted by hand from `docs/ollama/fly1.0.md`.
+The ollama.com pages are pasted by hand: `docs/ollama/fly1.0.md` for [Tromset/fly1.0](https://ollama.com/Tromset/fly1.0), `docs/ollama/fly1.1.md` for [Tromset/fly1.1](https://ollama.com/Tromset/fly1.1).
 
 ## Repository contents
 
