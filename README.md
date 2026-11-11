@@ -70,6 +70,16 @@ OLLAMA_HOST=127.0.0.1:11435 ollama run fly1.0
 
 Options: `--port` (11435), `--ollama` (http://127.0.0.1:11434), `--prefix`. Each answer carries the headers `x-flybrain-expert` and `x-flybrain-reason`.
 
+## Updating
+
+From this repository, one command updates the clone (FlyBrain, Modelfiles) and every published Fly model already installed in Ollama:
+
+```sh
+npm run update                                  # sh scripts/update.sh
+```
+
+It runs a fast-forward `git pull`, then `ollama pull` for each `Tromset/fly…` model in `ollama list`. A model you do not have is not installed, and local changes that conflict stop the update before anything is modified. Restart FlyBrain afterwards if it was running.
+
 ## What Fly 1.0 sets up on top of the bases
 
 - **The right sampling**: Mistral's recommendations, temperature 1.0 and top_p 0.95 for Mistral Large 4, and a temperature below 0.1 (0.05) for Ministral 3.
@@ -91,7 +101,7 @@ The ollama.com pages are pasted by hand: `docs/ollama/fly1.0.md` for [Tromset/fl
 
 - `Modelfile.ultra`, `Modelfile.lite`: the two models.
 - `brain/`: FlyBrain for Fly 1.0. `tests/`: `npm test`.
-- `scripts/publish.sh`: publishing. `scripts/weights.sh`: downloads and checks lite's GGUF into `models/`. `docs/ollama/`: the ollama.com page.
+- `scripts/update.sh`: `npm run update`. `scripts/publish.sh`: publishing. `scripts/weights.sh`: downloads and checks lite's GGUF into `models/`. `docs/ollama/`: the ollama.com page.
 
 ## Licenses
 
