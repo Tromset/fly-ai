@@ -5,7 +5,8 @@
   "description": "Fly 1.0: Le Chonk (Mistral Large 4) lightened with the FlyCoder method, for Ollama",
   "scripts": {
     "test": "node --test tests/modelfile.test.mjs tests/router.test.mjs",
-    "brain": "node brain/flybrain.mjs --prefix Tromset/"
+    "brain": "node brain/flybrain.mjs --prefix Tromset/",
+    "update": "sh scripts/update.sh"
   },
   "engines": {
     "node": ">=22"

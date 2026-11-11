@@ -66,6 +66,15 @@ test('publish.sh publishes every Modelfile under its name, and the page lists th
   execFileSync('sh', ['-n', new URL('../scripts/publish.sh', import.meta.url).pathname]);
 });
 
+test('npm run update runs a valid update script that only pulls published Fly models', () => {
+  const update = read('scripts/update.sh');
+  assert.equal(JSON.parse(read('package.json')).scripts.update, 'sh scripts/update.sh');
+  execFileSync('sh', ['-n', new URL('../scripts/update.sh', import.meta.url).pathname]);
+  assert.ok(update.includes('git -C "$here" pull --ff-only'), 'the code is fast-forwarded, never merged');
+  assert.ok(update.includes('ollama pull "$model"'), 'installed models are pulled again');
+  assert.ok(!/ollama (create|rm|push)/.test(update), 'an update never builds, removes or publishes a model');
+});
+
 test('the Mistral licenses are credited', () => {
   const readme = read('README.md');
   assert.match(readme, /Mistral Ecosystem Open-Weight License/);
